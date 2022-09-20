@@ -22,4 +22,20 @@
       <Filter>Arquivos de Recurso</Filter>
     </ClCompile>
   </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Shader.h">
+      <Filter>Arquivos de Recurso</Filter>
+    </ClInclude>
+    <ClInclude Include="stb_image.h">
+      <Filter>Arquivos de Recurso</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="3.3.shader.vs">
+      <Filter>Arquivos de Recurso</Filter>
+    </None>
+    <None Include="3.3.shader.frs">
+      <Filter>Arquivos de Recurso</Filter>
+    </None>
+  </ItemGroup>
 </Project>
