@@ -151,10 +151,13 @@
     <ClCompile Include="Main.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Camera.h" />
     <ClInclude Include="Shader.h" />
     <ClInclude Include="stb_image.h" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="1.light_cube.frs" />
+    <None Include="1.light_cube.vs" />
     <None Include="3.3.shader.frs" />
     <None Include="3.3.shader.vs" />
   </ItemGroup>
