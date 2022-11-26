@@ -71,11 +71,15 @@ int main()
     stbi_set_flip_vertically_on_load(true);
    
     glEnable(GL_DEPTH_TEST);
+    glEnable(GL_STENCIL_TEST);
+    glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+    glStencilFunc(GL_ALWAYS, 1, 0xFF); // all fragments should pass the stencil test
 
     // build and compile our shader zprogram
     // ------------------------------------
     Shader lightingShader("3.3.shader.vs", "3.3.shader.frs");
     Shader lightCubeShader("1.light_cube.vs", "1.light_cube.frs");
+    Shader outlineShader("1.light_cube.vs", "simplecolor.frag");
 
     Model ourModel("ModelBP/backpack.obj");
 
@@ -97,7 +101,10 @@ int main()
         // render
         // ------
         glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+
+        glStencilFunc(GL_ALWAYS, 1, 0xFF);
+        glStencilMask(0xFF);
 
         //using shader
         lightingShader.use();
@@ -116,8 +123,24 @@ int main()
         lightingShader.setMat4("model", model);
         ourModel.Draw(lightingShader);
 
+        //render outline
+        glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
+        glStencilMask(0x00); // disable writing to the stencil buffer
+        glDisable(GL_DEPTH_TEST);
+        model = glm::mat4(1.0f);
+        model = glm::scale(model, glm::vec3(1.1f, 1.1f, 1.1f));	// it's a bit too big for our scene, so scale it down
+        outlineShader.use();
+        outlineShader.setMat4("projection", projection);
+        outlineShader.setMat4("view", view);
+        outlineShader.setMat4("model", model);
+        ourModel.Draw(outlineShader);
+        glStencilMask(0xFF);
+        glStencilFunc(GL_ALWAYS, 0, 0xFF);
+        glEnable(GL_DEPTH_TEST);
+
+
         // glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
-         // -------------------------------------------------------------------------------
+        // -------------------------------------------------------------------------------
         glfwSwapBuffers(window);
         glfwPollEvents();
     }

@@ -52,5 +52,8 @@
     <None Include="1.light_cube.frs">
       <Filter>Arquivos de Recurso</Filter>
     </None>
+    <None Include="simplecolor.frag">
+      <Filter>Arquivos de Recurso</Filter>
+    </None>
   </ItemGroup>
 </Project>
