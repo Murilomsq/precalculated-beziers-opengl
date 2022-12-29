@@ -45,6 +45,9 @@ int main()
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
+    glfwWindowHint(GLFW_SAMPLES, 8); //Antialiasing stuff
+    
+
 #ifdef __APPLE__
     glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
 #endif
@@ -52,6 +55,10 @@ int main()
     // glfw window creation
     // --------------------
     GLFWwindow* window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "LearnOpenGL", NULL, NULL);
+
+    
+
+
     if (window == NULL)
     {
         std::cout << "Failed to create GLFW window" << std::endl;
@@ -72,11 +79,13 @@ int main()
     }
    
     glEnable(GL_DEPTH_TEST);
+    glEnable(GL_MULTISAMPLE); //Antialiasing stuff
 
     // build and compile our shader zprogram
     // ------------------------------------
     Shader lightingShader("3.3.shader.vs", "3.3.shader.frs");
     Shader lightCubeShader("1.light_cube.vs", "1.light_cube.frs");
+    Shader bezierShader("quadBezier.vert", "quadBezier.frag");
 
     // set up vertex data (and buffer(s)) and configure vertex attributes
     // ------------------------------------------------------------------
@@ -124,6 +133,14 @@ int main()
         -0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  0.0f, 0.0f,
         -0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  0.0f, 1.0f
     };
+
+    float triangleBezier[] = {
+        // vertices           // uv
+        -0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
+         0.5f, -0.5f, -0.5f,  0.5f, 0.0f,
+         0.5f,  0.5f, -0.5f,  1.0f, 1.0f
+    };
+
     unsigned int VBO, cubeVAO;
     glGenVertexArrays(1, &cubeVAO);
     glGenBuffers(1, &VBO);
@@ -152,6 +169,33 @@ int main()
     // note that we update the lamp's position attribute's stride to reflect the updated buffer data
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
     glEnableVertexAttribArray(0);
+
+
+
+    unsigned int bezierVBO, bezierVAO;
+    glGenVertexArrays(1, &bezierVAO);
+    glGenBuffers(1, &bezierVBO);
+
+    glBindBuffer(GL_ARRAY_BUFFER, bezierVBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(triangleBezier), triangleBezier, GL_STATIC_DRAW);
+
+    glBindVertexArray(bezierVAO);
+
+    // Position attribute
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void *)0);
+    glEnableVertexAttribArray(0);
+
+    // UV coords attribute
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
+    glEnableVertexAttribArray(1);
+
+
+
+
+
+
+
+
 
     unsigned int diffuseMap = loadTexture("steelbox.png");
     unsigned int specularMap = loadTexture("container2_specular.png");
@@ -220,7 +264,7 @@ int main()
         glBindTexture(GL_TEXTURE_2D, specularMap);
 
         glBindVertexArray(lightCubeVAO);
-        glDrawArrays(GL_TRIANGLES, 0, 36);
+        //glDrawArrays(GL_TRIANGLES, 0, 36);
 
         //Drawing center cube, note that view and projection transforms are the same for both objects
 
@@ -251,10 +295,23 @@ int main()
             model = glm::rotate(model, glm::radians(angle), glm::vec3(1.0f, 0.3f, 0.5f));
             lightingShader.setMat4("model", model);
 
-            glDrawArrays(GL_TRIANGLES, 0, 36);
+            //glDrawArrays(GL_TRIANGLES, 0, 36);
         }
 
-        glDrawArrays(GL_TRIANGLES, 0, 36);
+        //glDrawArrays(GL_TRIANGLES, 0, 36);
+
+
+        //Drawing Bezier
+
+        bezierShader.use();
+        bezierShader.setMat4("projection", projection);
+        bezierShader.setMat4("view", view);
+
+        model = glm::mat4(1.0f);
+        bezierShader.setMat4("model", model);
+
+        glBindVertexArray(bezierVAO);
+        glDrawArrays(GL_TRIANGLES, 0, 3);
 
 
         // glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)

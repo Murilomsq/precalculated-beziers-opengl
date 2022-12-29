@@ -160,6 +160,8 @@
     <None Include="1.light_cube.vs" />
     <None Include="3.3.shader.frs" />
     <None Include="3.3.shader.vs" />
+    <None Include="quadBezier.frag" />
+    <None Include="quadBezier.vert" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

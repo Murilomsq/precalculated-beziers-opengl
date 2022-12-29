@@ -13,6 +13,12 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
+    <Filter Include="Arquivos de Recurso\Shaders">
+      <UniqueIdentifier>{e321e65f-8264-4c61-9172-461268d891ae}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Arquivos de Recurso\Shaders\Bezier">
+      <UniqueIdentifier>{19aabd40-296e-4957-9b79-a5f25e994f99}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="glad.c">
@@ -34,17 +40,23 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <None Include="3.3.shader.vs">
-      <Filter>Arquivos de Recurso</Filter>
-    </None>
-    <None Include="3.3.shader.frs">
-      <Filter>Arquivos de Recurso</Filter>
+    <None Include="1.light_cube.frs">
+      <Filter>Arquivos de Recurso\Shaders</Filter>
     </None>
     <None Include="1.light_cube.vs">
-      <Filter>Arquivos de Recurso</Filter>
+      <Filter>Arquivos de Recurso\Shaders</Filter>
     </None>
-    <None Include="1.light_cube.frs">
-      <Filter>Arquivos de Recurso</Filter>
+    <None Include="3.3.shader.frs">
+      <Filter>Arquivos de Recurso\Shaders</Filter>
+    </None>
+    <None Include="3.3.shader.vs">
+      <Filter>Arquivos de Recurso\Shaders</Filter>
+    </None>
+    <None Include="quadBezier.vert">
+      <Filter>Arquivos de Recurso\Shaders\Bezier</Filter>
+    </None>
+    <None Include="quadBezier.frag">
+      <Filter>Arquivos de Recurso\Shaders\Bezier</Filter>
     </None>
   </ItemGroup>
 </Project>
