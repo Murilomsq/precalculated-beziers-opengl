@@ -18,6 +18,7 @@ void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
 void processInput(GLFWwindow* window);
 unsigned int loadTexture(const char* path);
+float castRay(int mouse_x, int mouse_y, glm::mat4 projectionMatrix, glm::mat4 viewMatrix, glm::vec3 planeNormal, float planeOriginDist);
 
 // settings
 const unsigned int SCR_WIDTH = 800;
@@ -35,6 +36,14 @@ float lastFrame = 0.0f; // Time of last frame
 // lighting
 float yLightStartingPos = 1.0f;
 glm::vec3 lightPos = glm::vec3(1.0, 1.0f, -1.0f);
+
+//Global matrices
+
+glm::mat4 projection;
+
+//Raycasting
+
+
 
 int main()
 {
@@ -128,8 +137,6 @@ int main()
         triangleBezier[5] = sin(glfwGetTime());
         glBindBuffer(GL_ARRAY_BUFFER, bezierVBO);
         glBufferData(GL_ARRAY_BUFFER, sizeof(triangleBezier), triangleBezier, GL_STATIC_DRAW);
-
-        std::cout << " Value " << triangleBezier[0] << std::endl;
         
         // input
         // -----
@@ -143,7 +150,7 @@ int main()
         //lightPos.y = 5*sin(glfwGetTime());
 
         // view/projection transformations
-        glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
+        projection = glm::perspective(glm::radians(camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
         glm::mat4 view = camera.GetViewMatrix();
         glm::mat4 model;
 
@@ -158,6 +165,8 @@ int main()
 
         glBindVertexArray(bezierVAO);
         glDrawArrays(GL_TRIANGLES, 0, 3);
+
+        //Drawing control points
 
         pointDrawing.use();
         bezierShader.setMat4("projection", projection);
@@ -231,6 +240,9 @@ void mouse_callback(GLFWwindow* window, double xposIn, double yposIn)
     lastY = ypos;
 
     camera.ProcessMouseMovement(xoffset, yoffset);
+
+    std::cout << "dist: " << castRay(xposIn, yposIn, projection, glm::inverse(camera.GetViewMatrix()), glm::vec3(0,0,1), 0.0f) << std::endl;
+
 }
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
 {
@@ -272,4 +284,32 @@ unsigned int loadTexture(const char* path)
     }
 
     return textureID;
+}
+
+float castRay(int mouse_x, int mouse_y, glm::mat4 projectionMatrix, glm::mat4 viewMatrix, glm::vec3 planeNormal, float planeOriginDist) {
+
+    //Viewport space to NDC space
+    float x = (2.0f * mouse_x) / SCR_WIDTH - 1.0f;
+    float y = 1.0f - (2.0f * mouse_y) / SCR_HEIGHT;
+    float z = 1.0f;
+    glm::vec3 ray_nds = glm::vec3(x, y, z);
+
+
+    // NDC space to Homogeneous clip space
+    glm::vec4 ray_clip = glm::vec4(ray_nds.x, ray_nds.y, -1.0, 1.0);
+
+    // Homogeneous clip space to Eye space
+    glm::vec4 ray_eye = glm::inverse(projectionMatrix) * ray_clip;
+    ray_eye = glm::vec4(ray_eye.x, ray_eye.y, -1.0, 0.0); // telling that it points forward and its not a point
+
+    //Eye space to World space
+    glm::vec3 ray_wor = glm::inverse(viewMatrix) * ray_eye;
+    glm::normalize(ray_wor);
+
+    glm::mat4 viewMinusOne = glm::inverse(viewMatrix);
+    glm::vec3 O = glm::vec3(viewMinusOne[3][0], viewMinusOne[3][1], viewMinusOne[3][2]);
+    float dist = -(glm::dot(planeNormal, O) + planeOriginDist) / glm::dot(ray_wor, planeNormal);
+    
+
+    return dist;
 }
