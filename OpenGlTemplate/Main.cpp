@@ -18,7 +18,8 @@ void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
 void processInput(GLFWwindow* window);
 unsigned int loadTexture(const char* path);
-float castRay(int mouse_x, int mouse_y, glm::mat4 projectionMatrix, glm::mat4 viewMatrix, glm::vec3 planeNormal, float planeOriginDist);
+bool intesectionTestSphere(glm::vec3 ray_wor, glm::mat4 viewMatrix, glm::vec3 center, float radius);
+glm::vec3 viewportSpaceToWorld(int mouse_x, int mouse_y, glm::mat4 projectionMatrix, glm::mat4 viewMatrix);
 
 // settings
 const unsigned int SCR_WIDTH = 800;
@@ -124,6 +125,30 @@ int main()
     glEnableVertexAttribArray(1);
 
 
+    float xyPlane[] = {
+
+        5.0f, 5.0f, 0.0f,
+        -5.0f, 5.0f, 0.0f,
+        -5.0f, -5.0f, 0.0f,
+
+        5.0f, 5.0f, 0.0f,
+        -5.0f, -5.0f, 0.0f,
+        5.0f, -5.0f, 0.0f,
+    };
+
+    unsigned int xyPlaneVBO, xyPlaneVAO;
+    glGenVertexArrays(1, &xyPlaneVAO);
+    glGenBuffers(1, &xyPlaneVBO);
+
+    glBindBuffer(GL_ARRAY_BUFFER, xyPlaneVBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(xyPlane), xyPlane, GL_STATIC_DRAW);
+
+    glBindVertexArray(xyPlaneVAO);
+
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+    glEnableVertexAttribArray(0);
+
+
     // render loop
     // -----------
     while (!glfwWindowShouldClose(window))
@@ -176,6 +201,9 @@ int main()
         bezierShader.setMat4("model", model);
         glBindVertexArray(bezierVAO);
         glDrawArrays(GL_POINTS, 0, 3);
+
+        glBindVertexArray(xyPlaneVAO);
+        glDrawArrays(GL_TRIANGLES, 0, 6);
 
 
         // glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
@@ -239,9 +267,10 @@ void mouse_callback(GLFWwindow* window, double xposIn, double yposIn)
     lastX = xpos;
     lastY = ypos;
 
-    camera.ProcessMouseMovement(xoffset, yoffset);
+    //camera.ProcessMouseMovement(xoffset, yoffset);
+    glm::vec3 ray = viewportSpaceToWorld(xposIn, yposIn, projection, glm::inverse(camera.GetViewMatrix()));
 
-    std::cout << "dist: " << castRay(xposIn, yposIn, projection, glm::inverse(camera.GetViewMatrix()), glm::vec3(0,0,1), 0.0f) << std::endl;
+    std::cout << "dist: " << intesectionTestSphere(ray, glm::inverse(camera.GetViewMatrix()), glm::vec3(0,0,0), 2) << std::endl;
 
 }
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
@@ -286,8 +315,38 @@ unsigned int loadTexture(const char* path)
     return textureID;
 }
 
-float castRay(int mouse_x, int mouse_y, glm::mat4 projectionMatrix, glm::mat4 viewMatrix, glm::vec3 planeNormal, float planeOriginDist) {
+float intersectionTestPlane(glm::vec3 ray_wor, glm::mat4 viewMatrix, glm::vec3 planeNormal, float planeOriginDist) {
 
+    glm::mat4 viewMinusOne = glm::inverse(viewMatrix);
+    glm::vec3 O = glm::vec3(viewMinusOne[3][0], viewMinusOne[3][1], viewMinusOne[3][2]);
+    float dist = -(glm::dot(planeNormal, O) + planeOriginDist) / glm::dot(ray_wor, planeNormal);
+
+    std::cout << "rayworld1: " << ray_wor[0] << std::endl;
+    std::cout << "rayworld2: " << ray_wor[1] << std::endl;
+    std::cout << "rayworld3: " << ray_wor[2] << std::endl;
+    
+    return dist;
+}
+
+
+bool intesectionTestSphere(glm::vec3 ray_wor, glm::mat4 viewMatrix, glm::vec3 center, float radius) {
+    //t = -b +-sqrt(b² - c)
+
+    glm::mat4 viewMinusOne = glm::inverse(viewMatrix);
+    glm::vec3 camPos = glm::vec3(viewMinusOne[3][0], viewMinusOne[3][1], viewMinusOne[3][2]);
+
+    float b = glm::dot(ray_wor, (camPos - center));
+    float c = glm::dot((camPos - center), (camPos - center)) - (radius * radius);
+
+    if (b * b - c <= 0) {
+        return false;
+    }
+    
+    return true;
+         
+}
+
+glm::vec3 viewportSpaceToWorld(int mouse_x, int mouse_y, glm::mat4 projectionMatrix, glm::mat4 viewMatrix) {
     //Viewport space to NDC space
     float x = (2.0f * mouse_x) / SCR_WIDTH - 1.0f;
     float y = 1.0f - (2.0f * mouse_y) / SCR_HEIGHT;
@@ -304,12 +363,8 @@ float castRay(int mouse_x, int mouse_y, glm::mat4 projectionMatrix, glm::mat4 vi
 
     //Eye space to World space
     glm::vec3 ray_wor = glm::inverse(viewMatrix) * ray_eye;
-    glm::normalize(ray_wor);
+    ray_wor = glm::normalize(ray_wor);
 
-    glm::mat4 viewMinusOne = glm::inverse(viewMatrix);
-    glm::vec3 O = glm::vec3(viewMinusOne[3][0], viewMinusOne[3][1], viewMinusOne[3][2]);
-    float dist = -(glm::dot(planeNormal, O) + planeOriginDist) / glm::dot(ray_wor, planeNormal);
-    
-
-    return dist;
+    return ray_wor;
 }
+
