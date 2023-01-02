@@ -10,6 +10,7 @@
 
 #include "Camera.h"
 #include "Shader.h"
+#include "Bezier.h"
 
 #include <iostream>
 
@@ -20,6 +21,8 @@ void processInput(GLFWwindow* window);
 unsigned int loadTexture(const char* path);
 bool intesectionTestSphere(glm::vec3 ray_wor, glm::mat4 viewMatrix, glm::vec3 center, float radius);
 glm::vec3 viewportSpaceToWorld(int mouse_x, int mouse_y, glm::mat4 projectionMatrix, glm::mat4 viewMatrix);
+glm::vec3 intersectionWithZPlane(glm::vec3 dir, glm::vec3 camPos);
+void mouse_button_callback(GLFWwindow* window, int button, int action, int mods);
 
 // settings
 const unsigned int SCR_WIDTH = 800;
@@ -34,6 +37,8 @@ bool firstMouse = true;
 float deltaTime = 0.0f;	// Time between current frame and last frame
 float lastFrame = 0.0f; // Time of last frame
 
+bool mouseBeingPressed = false;
+
 // lighting
 float yLightStartingPos = 1.0f;
 glm::vec3 lightPos = glm::vec3(1.0, 1.0f, -1.0f);
@@ -41,8 +46,12 @@ glm::vec3 lightPos = glm::vec3(1.0, 1.0f, -1.0f);
 //Global matrices
 
 glm::mat4 projection;
+glm::mat4 model;
 
-//Raycasting
+//Cursor
+
+int xCursorPos;
+int yCursorPos;
 
 
 
@@ -79,6 +88,7 @@ int main()
     glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
     glfwSetCursorPosCallback(window, mouse_callback);
     glfwSetScrollCallback(window, scroll_callback);
+    glfwSetMouseButtonCallback(window, mouse_button_callback);
 
     // glad: load all OpenGL function pointers
     // ---------------------------------------
@@ -148,20 +158,20 @@ int main()
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
     glEnableVertexAttribArray(0);
 
+    BezierControlPoint bezP1(&triangleBezier[0]);
 
     // render loop
     // -----------
     while (!glfwWindowShouldClose(window))
     {
+        
+        std::cout << intersectionWithZPlane(glm::vec3(0, 0, 1), glm::vec3(0, sqrt(2) / 2, sqrt(2) / 2))[1] << std::endl;
+
         // per-frame time logic
         // --------------------
         float currentFrame = static_cast<float>(glfwGetTime());
         deltaTime = currentFrame - lastFrame;
-        lastFrame = currentFrame;
-
-        triangleBezier[5] = sin(glfwGetTime());
-        glBindBuffer(GL_ARRAY_BUFFER, bezierVBO);
-        glBufferData(GL_ARRAY_BUFFER, sizeof(triangleBezier), triangleBezier, GL_STATIC_DRAW);
+        lastFrame = currentFrame;        
         
         // input
         // -----
@@ -172,12 +182,9 @@ int main()
         glClearColor(0.2f, 0.1f, 0.15f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // also clear the depth buffer now!
 
-        //lightPos.y = 5*sin(glfwGetTime());
-
         // view/projection transformations
         projection = glm::perspective(glm::radians(camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
         glm::mat4 view = camera.GetViewMatrix();
-        glm::mat4 model;
 
         //Drawing Bezier
 
@@ -188,10 +195,35 @@ int main()
         model = glm::mat4(1.0f);
         bezierShader.setMat4("model", model);
 
+        bezP1.modelMatrix = model;
+
+
+        if (mouseBeingPressed) {
+
+            
+
+            glm::vec3 ray = viewportSpaceToWorld(xCursorPos, yCursorPos, projection, camera.GetViewMatrix());
+
+            glm::mat4 viewMinusOne = glm::inverse(camera.GetViewMatrix());
+            glm::vec3 camPos = glm::vec3(viewMinusOne[3][0], viewMinusOne[3][1], viewMinusOne[3][2]);
+
+            bezP1.MoveVertexWorld(intersectionWithZPlane(ray, camPos));
+
+            std::cout << "x: " << camPos.x << std::endl;
+            std::cout << "y: " << camPos.y << std::endl;
+
+
+            glBindBuffer(GL_ARRAY_BUFFER, bezierVBO);
+            glBufferData(GL_ARRAY_BUFFER, sizeof(triangleBezier), triangleBezier, GL_STATIC_DRAW);
+        }
+        
+
         glBindVertexArray(bezierVAO);
         glDrawArrays(GL_TRIANGLES, 0, 3);
 
+
         //Drawing control points
+        
 
         pointDrawing.use();
         bezierShader.setMat4("projection", projection);
@@ -201,6 +233,8 @@ int main()
         bezierShader.setMat4("model", model);
         glBindVertexArray(bezierVAO);
         glDrawArrays(GL_POINTS, 0, 3);
+
+        //Drawing xy plane
 
         glBindVertexArray(xyPlaneVAO);
         glDrawArrays(GL_TRIANGLES, 0, 6);
@@ -251,6 +285,9 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height)
 }
 void mouse_callback(GLFWwindow* window, double xposIn, double yposIn)
 {
+    xCursorPos = xposIn;
+    yCursorPos = yposIn;
+
     float xpos = static_cast<float>(xposIn);
     float ypos = static_cast<float>(yposIn);
 
@@ -270,12 +307,24 @@ void mouse_callback(GLFWwindow* window, double xposIn, double yposIn)
     //camera.ProcessMouseMovement(xoffset, yoffset);
     glm::vec3 ray = viewportSpaceToWorld(xposIn, yposIn, projection, glm::inverse(camera.GetViewMatrix()));
 
-    std::cout << "dist: " << intesectionTestSphere(ray, glm::inverse(camera.GetViewMatrix()), glm::vec3(0,0,0), 2) << std::endl;
+    
 
 }
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
 {
     camera.ProcessMouseScroll(static_cast<float>(yoffset));
+}
+
+void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
+{
+    if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS) {
+        mouseBeingPressed = true;
+    }
+
+    if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_RELEASE) {
+        mouseBeingPressed = false;
+    }
+        
 }
 
 unsigned int loadTexture(const char* path)
@@ -366,5 +415,9 @@ glm::vec3 viewportSpaceToWorld(int mouse_x, int mouse_y, glm::mat4 projectionMat
     ray_wor = glm::normalize(ray_wor);
 
     return ray_wor;
+}
+
+glm::vec3 intersectionWithZPlane(glm::vec3 dir, glm::vec3 camPos) {
+    return glm::vec3(camPos[0]-camPos[2]*dir[0]/dir[2], camPos[1] - camPos[2] * dir[1] / dir[2], 0.0f);
 }
 

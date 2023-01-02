@@ -38,6 +38,9 @@
     <ClInclude Include="Camera.h">
       <Filter>Arquivos de Recurso</Filter>
     </ClInclude>
+    <ClInclude Include="Bezier.h">
+      <Filter>Arquivos de Recurso</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="1.light_cube.frs">
