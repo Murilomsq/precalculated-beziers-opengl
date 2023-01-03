@@ -69,7 +69,7 @@ int main()
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-    //glfwWindowHint(GLFW_SAMPLES, ); //Antialiasing stuff
+    glfwWindowHint(GLFW_SAMPLES, 4); //Antialiasing stuff
     
 
 #ifdef __APPLE__
@@ -112,7 +112,7 @@ int main()
 
     // build and compile our shader zprogram
     // ------------------------------------
-    Shader bezierShader("quadBezier.vert", "quadBezier.frag");
+    Shader bezierShader("quadBezier.vert", "quadBezierFull.frag");
     Shader planeDrawingShader("general.vert", "transparentPlane.frag");
     Shader pointDrawingShader("general.vert", "points.frag");
    
@@ -120,7 +120,7 @@ int main()
     float triangleBezier[] = {
         // vertices           // uv
         -0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
-         0.5f, -0.5f, -0.5f,  1.0f, 0.0f,
+         0.5f, -0.5f, -0.5f,  0.5f, 0.0f,
          0.5f,  0.5f, -0.5f,  1.0f, 1.0f
     };
 
