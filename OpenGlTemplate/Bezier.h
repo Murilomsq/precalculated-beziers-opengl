@@ -6,8 +6,11 @@ class BezierControlPoint {
 	public:
 		glm::mat4 modelMatrix;
 		float* vertex;
-		float clickRadius = 0.5f;
+		float clickRadius = 0.1f;
 
+		BezierControlPoint() {
+
+		}
 		BezierControlPoint(float* vertex) {
 			this-> vertex = vertex;
 		}
@@ -15,8 +18,6 @@ class BezierControlPoint {
 		// Moving vertex to be at world space coords
 		void MoveVertexWorld(glm::vec3 wSpacePoint) {
 			glm::vec3 localSpacePoint = glm::inverse(modelMatrix) * glm::vec4(wSpacePoint, 1.0f);
-
-			std::cout << "value bef " << localSpacePoint[0] << std::endl;
 
 			vertex[0] = localSpacePoint[0];
 			vertex[1] = localSpacePoint[1];

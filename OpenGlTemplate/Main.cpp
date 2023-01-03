@@ -53,6 +53,11 @@ glm::mat4 model;
 int xCursorPos;
 int yCursorPos;
 
+//Bezier
+
+BezierControlPoint selectedBez;
+BezierControlPoint targetArray[3];
+
 
 
 int main()
@@ -64,7 +69,7 @@ int main()
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-    glfwWindowHint(GLFW_SAMPLES, 6); //Antialiasing stuff
+    //glfwWindowHint(GLFW_SAMPLES, ); //Antialiasing stuff
     
 
 #ifdef __APPLE__
@@ -102,12 +107,14 @@ int main()
     glEnable(GL_BLEND);
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_MULTISAMPLE); //Antialiasing stuff
+    glEnable(GL_PROGRAM_POINT_SIZE);
     
 
     // build and compile our shader zprogram
     // ------------------------------------
     Shader bezierShader("quadBezier.vert", "quadBezier.frag");
-    Shader pointDrawing("1.light_cube.vs", "1.light_cube.frs");
+    Shader planeDrawingShader("general.vert", "transparentPlane.frag");
+    Shader pointDrawingShader("general.vert", "points.frag");
    
 
     float triangleBezier[] = {
@@ -158,14 +165,15 @@ int main()
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
     glEnableVertexAttribArray(0);
 
-    BezierControlPoint bezP1(&triangleBezier[0]);
+
+    targetArray[0] = BezierControlPoint(&triangleBezier[0]);
+    targetArray[1] = BezierControlPoint(&triangleBezier[5]);
+    targetArray[2] = BezierControlPoint(&triangleBezier[10]);
 
     // render loop
     // -----------
     while (!glfwWindowShouldClose(window))
     {
-        
-        std::cout << intersectionWithZPlane(glm::vec3(0, 0, 1), glm::vec3(0, sqrt(2) / 2, sqrt(2) / 2))[1] << std::endl;
 
         // per-frame time logic
         // --------------------
@@ -179,7 +187,7 @@ int main()
 
         // render
         // ------
-        glClearColor(0.2f, 0.1f, 0.15f, 1.0f);
+        glClearColor(0.1f, 0.0f, 0.0f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // also clear the depth buffer now!
 
         // view/projection transformations
@@ -195,26 +203,38 @@ int main()
         model = glm::mat4(1.0f);
         bezierShader.setMat4("model", model);
 
-        bezP1.modelMatrix = model;
+        
 
 
         if (mouseBeingPressed) {
 
-            
+
 
             glm::vec3 ray = viewportSpaceToWorld(xCursorPos, yCursorPos, projection, camera.GetViewMatrix());
 
-            glm::mat4 viewMinusOne = glm::inverse(camera.GetViewMatrix());
-            glm::vec3 camPos = glm::vec3(viewMinusOne[3][0], viewMinusOne[3][1], viewMinusOne[3][2]);
 
-            bezP1.MoveVertexWorld(intersectionWithZPlane(ray, camPos));
+            //std::cout << intesectionTestSphere(ray, view, glm::vec3(0,0,0), 1.0f) << std::endl;
+            
+            for (int i = 0; i < sizeof(targetArray) / sizeof(BezierControlPoint); i++) {
+                targetArray[i].modelMatrix = model;
 
-            std::cout << "x: " << camPos.x << std::endl;
-            std::cout << "y: " << camPos.y << std::endl;
+                std::cout << targetArray[i].intesectionTestSphere(ray, view) << std::endl;
+                
+                if (!targetArray[i].intesectionTestSphere(ray, view)) {
+                    continue;
+                }
+                
 
+                glm::mat4 viewMinusOne = glm::inverse(camera.GetViewMatrix());
+                glm::vec3 camPos = glm::vec3(viewMinusOne[3][0], viewMinusOne[3][1], viewMinusOne[3][2]);
 
-            glBindBuffer(GL_ARRAY_BUFFER, bezierVBO);
-            glBufferData(GL_ARRAY_BUFFER, sizeof(triangleBezier), triangleBezier, GL_STATIC_DRAW);
+                targetArray[i].MoveVertexWorld(intersectionWithZPlane(ray, camPos));
+
+                glBindBuffer(GL_ARRAY_BUFFER, bezierVBO);
+                glBufferData(GL_ARRAY_BUFFER, sizeof(triangleBezier), triangleBezier, GL_STATIC_DRAW);
+                break;
+
+            }
         }
         
 
@@ -225,7 +245,7 @@ int main()
         //Drawing control points
         
 
-        pointDrawing.use();
+        pointDrawingShader.use();
         bezierShader.setMat4("projection", projection);
         bezierShader.setMat4("view", view);
 
@@ -236,6 +256,7 @@ int main()
 
         //Drawing xy plane
 
+        planeDrawingShader.use();
         glBindVertexArray(xyPlaneVAO);
         glDrawArrays(GL_TRIANGLES, 0, 6);
 
@@ -319,6 +340,10 @@ void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
 {
     if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS) {
         mouseBeingPressed = true;
+        glm::vec3 ray = viewportSpaceToWorld(xCursorPos, yCursorPos, projection, camera.GetViewMatrix());
+
+
+        std::cout << intesectionTestSphere(ray, camera.GetViewMatrix(), glm::vec3(0,0,0), 1.0f) << std::endl;
     }
 
     if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_RELEASE) {

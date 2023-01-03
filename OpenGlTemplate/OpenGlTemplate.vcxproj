@@ -157,10 +157,11 @@
     <ClInclude Include="stb_image.h" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="1.light_cube.frs" />
-    <None Include="1.light_cube.vs" />
+    <None Include="transparentPlane.frag" />
+    <None Include="general.vert" />
     <None Include="3.3.shader.frs" />
-    <None Include="3.3.shader.vs" />
+    <None Include="3.3.shader.vert" />
+    <None Include="points.frag" />
     <None Include="quadBezier.frag" />
     <None Include="quadBezier.vert" />
   </ItemGroup>

@@ -43,22 +43,25 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <None Include="1.light_cube.frs">
+    <None Include="transparentPlane.frag">
       <Filter>Arquivos de Recurso\Shaders</Filter>
     </None>
-    <None Include="1.light_cube.vs">
+    <None Include="general.vert">
       <Filter>Arquivos de Recurso\Shaders</Filter>
     </None>
     <None Include="3.3.shader.frs">
       <Filter>Arquivos de Recurso\Shaders</Filter>
     </None>
-    <None Include="3.3.shader.vs">
+    <None Include="3.3.shader.vert">
       <Filter>Arquivos de Recurso\Shaders</Filter>
     </None>
     <None Include="quadBezier.vert">
       <Filter>Arquivos de Recurso\Shaders\Bezier</Filter>
     </None>
     <None Include="quadBezier.frag">
+      <Filter>Arquivos de Recurso\Shaders\Bezier</Filter>
+    </None>
+    <None Include="points.frag">
       <Filter>Arquivos de Recurso\Shaders\Bezier</Filter>
     </None>
   </ItemGroup>
