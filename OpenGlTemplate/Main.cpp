@@ -25,8 +25,8 @@ glm::vec3 intersectionWithZPlane(glm::vec3 dir, glm::vec3 camPos);
 void mouse_button_callback(GLFWwindow* window, int button, int action, int mods);
 
 // settings
-const unsigned int SCR_WIDTH = 800;
-const unsigned int SCR_HEIGHT = 600;
+const unsigned int SCR_WIDTH = 1920;
+const unsigned int SCR_HEIGHT = 1080;
 
 // camera
 Camera camera(glm::vec3(0.0f, 0.0f, 3.0f));
@@ -112,7 +112,7 @@ int main()
 
     // build and compile our shader zprogram
     // ------------------------------------
-    Shader bezierShader("quadBezier.vert", "quadBezierFull.frag");
+    Shader bezierShader("quadBezier.vert", "quadBezierLine.frag");
     Shader planeDrawingShader("general.vert", "transparentPlane.frag");
     Shader pointDrawingShader("general.vert", "points.frag");
    
@@ -191,6 +191,7 @@ int main()
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // also clear the depth buffer now!
 
         // view/projection transformations
+        //projection = glm::ortho(0, 800, 0 , 600);
         projection = glm::perspective(glm::radians(camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
         glm::mat4 view = camera.GetViewMatrix();
 
