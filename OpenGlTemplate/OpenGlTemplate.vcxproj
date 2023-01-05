@@ -157,6 +157,8 @@
     <ClInclude Include="stb_image.h" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="cubicBezier.vert" />
+    <None Include="cubicBezierFull.frag" />
     <None Include="quadBezierFull.frag" />
     <None Include="transparentPlane.frag" />
     <None Include="general.vert" />

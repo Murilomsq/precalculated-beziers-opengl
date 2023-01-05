@@ -67,5 +67,11 @@
     <None Include="quadBezierFull.frag">
       <Filter>Arquivos de Recurso\Shaders\Bezier</Filter>
     </None>
+    <None Include="cubicBezierFull.frag">
+      <Filter>Arquivos de Recurso\Shaders\Bezier</Filter>
+    </None>
+    <None Include="cubicBezier.vert">
+      <Filter>Arquivos de Recurso\Shaders\Bezier</Filter>
+    </None>
   </ItemGroup>
 </Project>

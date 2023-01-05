@@ -23,7 +23,7 @@ bool intesectionTestSphere(glm::vec3 ray_wor, glm::mat4 viewMatrix, glm::vec3 ce
 glm::vec3 viewportSpaceToWorld(int mouse_x, int mouse_y, glm::mat4 projectionMatrix, glm::mat4 viewMatrix);
 glm::vec3 intersectionWithZPlane(glm::vec3 dir, glm::vec3 camPos);
 void mouse_button_callback(GLFWwindow* window, int button, int action, int mods);
-glm::mat4 getTextureSpaceCoordsCubic(glm::vec3 b0, glm::vec3 b1, glm::vec3 b2, glm::vec3 b3);
+glm::mat4 getTextureSpaceCoordsCubic(glm::vec4 b0, glm::vec4 b1, glm::vec4 b2, glm::vec4 b3);
 
 // settings
 const unsigned int SCR_WIDTH = 800;
@@ -113,7 +113,7 @@ int main()
 
     // build and compile our shader zprogram
     // ------------------------------------
-    Shader bezierShader("quadBezier.vert", "quadBezierFull.frag");
+    Shader bezierShader("cubicBezier.vert", "cubicBezierFull.frag");
     Shader planeDrawingShader("general.vert", "transparentPlane.frag");
     Shader pointDrawingShader("general.vert", "points.frag");
    
@@ -121,20 +121,38 @@ int main()
     float triangleBezier[] = {
         // vertices           // uv
         -1.0f, 0.0f, 1.0f,  0.0f, 0.0f, 0.0f,
-         -0.5f, 0.5f, 1.0f,  0.0, 0.0f, 0.0f,
-         0.5f,  0.5f, 1.0f,  0.0f, 0.0f, 0.0f,
+         -0.5f, -1.0, 1.0f,  0.0, 0.0f, 0.0f,
+         0.0f,  0.5f, 1.0f,  0.0f, 0.0f, 0.0f,
          1.0f,  0.0f, 1.0f,  0.0f, 0.0f, 0.0f,
     };
 
-    glm::vec3 b0(-1.0f, 0.0f, -0.5f);
-    glm::vec3 b1(-0.5f, 0.5f, -0.5f);
-    glm::vec3 b2(0.5f, 0.5f, -0.5f);
-    glm::vec3 b3(1.0f, 0.0f, -0.5f);
+    glm::vec4 b0(-1.0f, 0.0f, 1.0f, 1.0f);
+    glm::vec4 b1(-0.5f, -1.0f, 1.0f, 1.0f);
+    glm::vec4 b2(0.0f, 0.5f, 1.0f, 1.0f);
+    glm::vec4 b3(1.0f, 0.0f, 1.0f, 1.0f);
 
     glm::mat4 uvs = getTextureSpaceCoordsCubic(b0, b1, b2, b3);
 
 
     std::cout << uvs[0][0];
+
+    triangleBezier[3] = uvs[0][0];
+    triangleBezier[4] = uvs[1][0];
+    triangleBezier[5] = uvs[2][0];
+
+    triangleBezier[9] = uvs[0][1];
+    triangleBezier[10] = uvs[1][1];
+    triangleBezier[11] = uvs[2][1];
+
+    triangleBezier[15] = uvs[0][2];
+    triangleBezier[16] = uvs[1][2];
+    triangleBezier[17] = uvs[2][2];
+
+    triangleBezier[21] = uvs[0][3];
+    triangleBezier[22] = uvs[1][3];
+    triangleBezier[23] = uvs[2][3];
+
+
 
     
 
@@ -214,12 +232,12 @@ int main()
 
         //Drawing Bezier
 
-        //bezierShader.use();
-        //bezierShader.setMat4("projection", projection);
-        //bezierShader.setMat4("view", view);
+        bezierShader.use();
+        bezierShader.setMat4("projection", projection);
+        bezierShader.setMat4("view", view);
 
-        //model = glm::mat4(1.0f);
-        //bezierShader.setMat4("model", model);
+        model = glm::mat4(1.0f);
+        bezierShader.setMat4("model", model);
 
         //
 
@@ -261,25 +279,20 @@ int main()
 
 
         //Drawing control points
-        
+ 
+        glBindVertexArray(bezierVAO);
+        glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
         pointDrawingShader.use();
-        bezierShader.setMat4("projection", projection);
-        bezierShader.setMat4("view", view);
+
+        pointDrawingShader.setMat4("projection", projection);
+        pointDrawingShader.setMat4("view", view);
 
         model = glm::mat4(1.0f);
-        bezierShader.setMat4("model", model);
-        glBindVertexArray(bezierVAO);
-        glDrawArrays(GL_POINTS, 0, 3);
+        pointDrawingShader.setMat4("model", model);
 
-        glBindVertexArray(bezierVAO);
-        glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
+        glDrawArrays(GL_POINTS, 0, 4);
 
-        //Drawing xy plane
-
-        planeDrawingShader.use();
-        glBindVertexArray(xyPlaneVAO);
-        glDrawArrays(GL_TRIANGLES, 0, 6);
 
 
         // glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
@@ -467,33 +480,54 @@ glm::vec3 intersectionWithZPlane(glm::vec3 dir, glm::vec3 camPos) {
     return glm::vec3(camPos[0]-camPos[2]*dir[0]/dir[2], camPos[1] - camPos[2] * dir[1] / dir[2], 0.0f);
 }
 
-glm::mat4 getTextureSpaceCoordsCubic(glm::vec3 b0, glm::vec3 b1, glm::vec3 b2, glm::vec3 b3) {
+glm::mat4 getTextureSpaceCoordsCubic(glm::vec4 b0, glm::vec4 b1, glm::vec4 b2, glm::vec4 b3) {
     //bernstein basis matrix
-    glm::mat4 M3(1.0f,0.0f,0.0f,0.0f,
-                -3.0f,3.0f,0.0f,0.0f,
-                3.0f,-6.0f,3.0f,0.0f,
-                -1.0f,3.0f,-3.0f,1.0f);
+    glm::mat4 M3;
 
-    M3 = glm::transpose(M3);
+    M3[0][0] = 1.0f;
+    M3[0][1] = -3.0f;
+    M3[0][2] = 3.0f;            //Column 0
+    M3[0][3] = -1.0f;
 
-   // std::cout << M3[0][1] << std::endl;
+    M3[1][0] = 0.0f;
+    M3[1][1] = 3.0f;
+    M3[1][2] = -6.0f;           //Column 1
+    M3[1][3] = 3.0f;
 
-    //Control points
-    glm::mat4x3 Bt(b0.x, b0.y, b0.z,
-                   b1.x, b1.y, b1.z,
-                   b2.x, b2.y, b2.z,
-                   b3.x, b3.y, b3.z);
+    M3[2][0] = 0.0f;
+    M3[2][1] = 0.0f;
+    M3[2][2] = 3.0f;            //Column 2
+    M3[2][3] = -3.0f;
 
-
-    std::cout << Bt[1][0] << std::endl;
-
-    glm::mat3x4 B = glm::transpose(Bt);
+    M3[3][0] = 0.0f;
+    M3[3][1] = 0.0f;
+    M3[3][2] = 0.0f;            //Column 3
+    M3[3][3] = 1.0f;
 
     
+    //    1.0f, 0.0f, 0.0f, 0.0f,
+    //    -3.0f, 3.0f, 0.0f, 0.0f,
+    //    3.0f, -6.0f, 3.0f, 0.0f,
+    //    -1.0f, 3.0f, -3.0f, 1.0f
+
+
+
+    //Control points
+    glm::mat4x4 Bt(b0.x, b1.x, b2.x, b3.x,
+                   b0.y, b1.y, b2.y, b3.y,
+                   b0.z, b1.z, b2.z, b3.z,
+                   b0.w, b1.w, b2.w, b3.w);
+
+
+    //glm::vec3 b0(-1.0f, 0.0f, -0.5f);
+    //glm::vec3 b1(-0.5f, 0.5f, -0.5f);
+    //glm::vec3 b2(0.5f, 0.5f, -0.5f);
+    //glm::vec3 b3(1.0f, 0.0f, -0.5f);
+
 
 
     //Control Points in power basis form
-    glm::mat3x4 PBB = M3 * B;
+    glm::mat4x4 C = M3 * Bt;
 
 
     float d0;
@@ -503,35 +537,35 @@ glm::mat4 getTextureSpaceCoordsCubic(glm::vec3 b0, glm::vec3 b1, glm::vec3 b2, g
 
     glm::mat3 temp;
 
-    temp[0][0] = PBB[0][3];
-    temp[1][0] = PBB[1][3];
-    temp[2][0] = PBB[2][3];
+    temp[0][0] = C[0][3];
+    temp[1][0] = C[1][3];
+    temp[2][0] = C[3][3];
     
-    temp[0][1] = PBB[0][2];
-    temp[1][1] = PBB[1][2];
-    temp[2][1] = PBB[2][2]; 
+    temp[0][1] = C[0][2];
+    temp[1][1] = C[1][2];
+    temp[2][1] = C[3][2];
     
-    temp[0][2] = PBB[0][1];
-    temp[1][2] = PBB[1][1];
-    temp[2][2] = PBB[2][1];
+    temp[0][2] = C[0][1];
+    temp[1][2] = C[1][1];
+    temp[2][2] = C[3][1];
 
     d0 = glm::determinant(temp);
 
-    temp[0][2] = PBB[0][0];
-    temp[1][2] = PBB[1][0];
-    temp[2][2] = PBB[2][0];
+    temp[0][2] = C[0][0];
+    temp[1][2] = C[1][0];
+    temp[2][2] = C[3][0];
 
     d1 = - glm::determinant(temp);
 
-    temp[0][1] = PBB[0][1];
-    temp[1][1] = PBB[1][1];
-    temp[2][1] = PBB[2][1];
+    temp[0][1] = C[0][1];
+    temp[1][1] = C[1][1];
+    temp[2][1] = C[3][1];
 
     d2 = glm::determinant(temp);
 
-    temp[0][0] = PBB[0][2];
-    temp[1][0] = PBB[1][2];
-    temp[2][0] = PBB[2][2];
+    temp[0][0] = C[0][2];
+    temp[1][0] = C[1][2];
+    temp[2][0] = C[3][2];
 
     d3 = -glm::determinant(temp);
 
@@ -542,7 +576,7 @@ glm::mat4 getTextureSpaceCoordsCubic(glm::vec3 b0, glm::vec3 b1, glm::vec3 b2, g
 
     float DT1 = d0 * d2 - d1 * d1;
     float DT2 = d1 * d2 - d0 * d3;
-    float DT3 = d1 - d3 - d2 * d2;
+    float DT3 = d1 * d3 - d2 * d2;
 
     float discriminant = 4 * DT1 * DT3 - (DT2 * DT2);
 
@@ -550,11 +584,18 @@ glm::mat4 getTextureSpaceCoordsCubic(glm::vec3 b0, glm::vec3 b1, glm::vec3 b2, g
 
     // if serpentine
 
-    float tl = d2 + (1 / sqrt(3)) * sqrt(3 * d2 * d2 - 4 * d1 * d3);
-    float sl = 2 * d1;
+    
 
-    float tm = d2 - (1 / sqrt(3)) * sqrt(3 * d2 * d2 - 4 * d1 * d3);
-    float sm = 2 * d1;
+    float tl = 3 * d2 + sqrt(9 * d2 * d2 - 12 * d1 * d3);
+    float sl = 6 * d1;
+
+
+    float tm = 3 * d2 - sqrt(9 * d2 * d2 - 12 * d1 * d3);
+    float sm = 6 * d1;
+
+    //glm::vec2 n = glm::normalize(glm::vec2(tm, sm));
+    //tm = n.x;
+    //sm = n.y;
 
     float tn = 1.0f;
     float sn = 0.0f;
@@ -581,6 +622,6 @@ glm::mat4 getTextureSpaceCoordsCubic(glm::vec3 b0, glm::vec3 b1, glm::vec3 b2, g
     texCoords[2][3] = tm * tm * tm - 3 * tm * tm * sm + 3 * tm * sm * sm - sm * sm * sm;
     texCoords[3][3] = 1;
 
-    return texCoords';
+    return texCoords;
 }
 
