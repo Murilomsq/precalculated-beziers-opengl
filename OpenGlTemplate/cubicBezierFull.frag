@@ -9,11 +9,6 @@ void main()
     vec3 px = dFdx(TexCoords);
     vec3 py = dFdy(TexCoords);
 
-
-    px = 5*px / sqrt(px*px + py*py); 
-    py = 5*py / sqrt(px*px + py*py); 
-
-
     // Chain rule   
     //float fx = (2*TexCoords.x)*px.x - px.y; 
     float fx = 3 * TexCoords.x * TexCoords.x * px.x - TexCoords.y*px.y - TexCoords.z * px.z;
@@ -26,7 +21,7 @@ void main()
     float alpha = 1-sd;  
     
     
-    if(alpha >= 0.5)
+    if(pow(TexCoords.x, 3) - TexCoords.y * TexCoords.z - TexCoords.y < 0)
     {
        FragColor = vec4(pow(alpha,5),1.0f, 1.0f, 1.0f);
     }
