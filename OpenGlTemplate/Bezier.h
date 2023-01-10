@@ -15,6 +15,14 @@ class BezierControlPoint {
 			this-> vertex = vertex;
 		}
 
+		glm::vec3 vec3FromVertex() {
+			return glm::vec3(vertex[0], vertex[1], vertex[2]);
+		}
+
+		glm::vec4 vec4FromVertex() {
+			return glm::vec4(vertex[0], vertex[1], vertex[2], 1.0f);
+		}
+
 		// Moving vertex to be at world space coords
 		void MoveVertexWorld(glm::vec3 wSpacePoint) {
 			glm::vec3 localSpacePoint = glm::inverse(modelMatrix) * glm::vec4(wSpacePoint, 1.0f);

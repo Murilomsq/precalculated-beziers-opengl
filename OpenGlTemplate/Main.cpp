@@ -57,7 +57,7 @@ int yCursorPos;
 //Bezier
 
 BezierControlPoint selectedBez;
-BezierControlPoint targetArray[3];
+BezierControlPoint targetArray[4];
 
 
 
@@ -120,10 +120,10 @@ int main()
 
     float triangleBezier[] = {
         // vertices           // uv
-        -1.0f, 0.0f, 1.0f,  0.0f, 0.0f, 0.0f,
-         -0.5f, -1.0, 1.0f,  0.0, 0.0f, 0.0f,
-         0.0f,  0.5f, 1.0f,  0.0f, 0.0f, 0.0f,
-         1.0f,  0.0f, 1.0f,  0.0f, 0.0f, 0.0f,
+        -1.0f, 0.0f, 0.0f,  0.0f, 0.0f, 0.0f,
+         -0.5f, -1.0, 0.0f,  0.0, 0.0f, 0.0f,
+         0.0f,  0.5f, 0.0f,  0.0f, 0.0f, 0.0f,
+         1.0f,  0.0f, 0.0f,  0.0f, 0.0f, 0.0f,
     };
 
     glm::vec4 b0(-1.0f, 0.0f, 1.0f, 1.0f);
@@ -132,9 +132,6 @@ int main()
     glm::vec4 b3(1.0f, 0.0f, 1.0f, 1.0f);
 
     glm::mat4 uvs = getTextureSpaceCoordsCubic(b0, b1, b2, b3);
-
-
-    std::cout << uvs[0][0];
 
     triangleBezier[3] = uvs[0][0];
     triangleBezier[4] = uvs[1][0];
@@ -199,8 +196,9 @@ int main()
 
 
     targetArray[0] = BezierControlPoint(&triangleBezier[0]);
-    targetArray[1] = BezierControlPoint(&triangleBezier[5]);
-    targetArray[2] = BezierControlPoint(&triangleBezier[10]);
+    targetArray[1] = BezierControlPoint(&triangleBezier[6]);
+    targetArray[2] = BezierControlPoint(&triangleBezier[12]);
+    targetArray[3] = BezierControlPoint(&triangleBezier[18]);
 
 
 
@@ -242,40 +240,59 @@ int main()
         //
 
 
-        //if (mouseBeingPressed) {
+        if (mouseBeingPressed) {
 
+            glm::vec3 ray = viewportSpaceToWorld(xCursorPos, yCursorPos, projection, camera.GetViewMatrix());
 
+            //std::cout << intesectionTestSphere(ray, view, glm::vec3(0,0,0), 1.0f) << std::endl;
+            
+            for (int i = 0; i < sizeof(targetArray) / sizeof(BezierControlPoint); i++) {
+                targetArray[i].modelMatrix = model;
+                
+                if (!targetArray[i].intesectionTestSphere(ray, view)) {
+                    continue;
+                }
 
-        //    glm::vec3 ray = viewportSpaceToWorld(xCursorPos, yCursorPos, projection, camera.GetViewMatrix());
+                glm::mat4 viewMinusOne = glm::inverse(camera.GetViewMatrix());
+                glm::vec3 camPos = glm::vec3(viewMinusOne[3][0], viewMinusOne[3][1], viewMinusOne[3][2]);
 
+                targetArray[i].MoveVertexWorld(intersectionWithZPlane(ray, camPos));
 
-        //    //std::cout << intesectionTestSphere(ray, view, glm::vec3(0,0,0), 1.0f) << std::endl;
-        //    
-        //    for (int i = 0; i < sizeof(targetArray) / sizeof(BezierControlPoint); i++) {
-        //        targetArray[i].modelMatrix = model;
+                glBindBuffer(GL_ARRAY_BUFFER, bezierVBO);
+                glBufferData(GL_ARRAY_BUFFER, sizeof(triangleBezier), triangleBezier, GL_STATIC_DRAW);
+                break;
 
-        //        std::cout << targetArray[i].intesectionTestSphere(ray, view) << std::endl;
-        //        
-        //        if (!targetArray[i].intesectionTestSphere(ray, view)) {
-        //            continue;
-        //        }
-        //        
+            }
 
-        //        glm::mat4 viewMinusOne = glm::inverse(camera.GetViewMatrix());
-        //        glm::vec3 camPos = glm::vec3(viewMinusOne[3][0], viewMinusOne[3][1], viewMinusOne[3][2]);
+            glm::vec4 b0 = targetArray[0].vec4FromVertex();
+            glm::vec4 b1 = targetArray[1].vec4FromVertex();
+            glm::vec4 b2 = targetArray[2].vec4FromVertex();
+            glm::vec4 b3 = targetArray[3].vec4FromVertex();
 
-        //        targetArray[i].MoveVertexWorld(intersectionWithZPlane(ray, camPos));
+            //Recalculating texture space values after moving points
+            glm::mat4 uvs = getTextureSpaceCoordsCubic(targetArray[0].vec4FromVertex(), targetArray[1].vec4FromVertex(), targetArray[2].vec4FromVertex(), targetArray[3].vec4FromVertex());
 
-        //        glBindBuffer(GL_ARRAY_BUFFER, bezierVBO);
-        //        glBufferData(GL_ARRAY_BUFFER, sizeof(triangleBezier), triangleBezier, GL_STATIC_DRAW);
-        //        break;
+            //TODO: make this extensible later
 
-        //    }
-        //}
-        //
+            triangleBezier[3] = uvs[0][0];
+            triangleBezier[4] = uvs[1][0];
+            triangleBezier[5] = uvs[2][0];
 
-        //glBindVertexArray(bezierVAO);
-        //glDrawArrays(GL_TRIANGLES, 0, 3);
+            triangleBezier[9] = uvs[0][1];
+            triangleBezier[10] = uvs[1][1];
+            triangleBezier[11] = uvs[2][1];
+
+            triangleBezier[15] = uvs[0][2];
+            triangleBezier[16] = uvs[1][2];
+            triangleBezier[17] = uvs[2][2];
+
+            triangleBezier[21] = uvs[0][3];
+            triangleBezier[22] = uvs[1][3];
+            triangleBezier[23] = uvs[2][3];
+        }
+        
+        glBindVertexArray(bezierVAO);
+        glDrawArrays(GL_TRIANGLES, 0, 3);
 
 
         //Drawing control points
@@ -375,9 +392,6 @@ void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
     if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS) {
         mouseBeingPressed = true;
         glm::vec3 ray = viewportSpaceToWorld(xCursorPos, yCursorPos, projection, camera.GetViewMatrix());
-
-
-        std::cout << intesectionTestSphere(ray, camera.GetViewMatrix(), glm::vec3(0,0,0), 1.0f) << std::endl;
     }
 
     if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_RELEASE) {
@@ -428,10 +442,6 @@ float intersectionTestPlane(glm::vec3 ray_wor, glm::mat4 viewMatrix, glm::vec3 p
     glm::mat4 viewMinusOne = glm::inverse(viewMatrix);
     glm::vec3 O = glm::vec3(viewMinusOne[3][0], viewMinusOne[3][1], viewMinusOne[3][2]);
     float dist = -(glm::dot(planeNormal, O) + planeOriginDist) / glm::dot(ray_wor, planeNormal);
-
-    std::cout << "rayworld1: " << ray_wor[0] << std::endl;
-    std::cout << "rayworld2: " << ray_wor[1] << std::endl;
-    std::cout << "rayworld3: " << ray_wor[2] << std::endl;
     
     return dist;
 }
@@ -481,6 +491,9 @@ glm::vec3 intersectionWithZPlane(glm::vec3 dir, glm::vec3 camPos) {
 }
 
 glm::mat4 getTextureSpaceCoordsCubic(glm::vec4 b0, glm::vec4 b1, glm::vec4 b2, glm::vec4 b3) {
+
+    glm::mat4 orientationCorrecter(-1.0f, 0.0f, 0.0f, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f);
+
     //bernstein basis matrix
     glm::mat4 M3;
 
@@ -569,10 +582,6 @@ glm::mat4 getTextureSpaceCoordsCubic(glm::vec4 b0, glm::vec4 b1, glm::vec4 b2, g
 
     d3 = -glm::determinant(temp);
 
-    std::cout << d0 << std::endl;
-    std::cout << d1 << std::endl;
-    std::cout << d2 << std::endl;
-    std::cout << d3 << std::endl;
 
     float DT1 = d0 * d2 - d1 * d1;
     float DT2 = d1 * d2 - d0 * d3;
@@ -582,46 +591,79 @@ glm::mat4 getTextureSpaceCoordsCubic(glm::vec4 b0, glm::vec4 b1, glm::vec4 b2, g
 
     std::cout << discriminant << std::endl;
 
-    // if serpentine
-
     
 
-    float tl = 3 * d2 + sqrt(9 * d2 * d2 - 12 * d1 * d3);
-    float sl = 6 * d1;
+    if (discriminant >= 0) {                // Serpentine case
 
+        float tl = d2 + (1 / sqrt(3)) * sqrt(3 * d2 * d2 - 4 * d1 * d3);
+        float sl = 2 * d1;
 
-    float tm = 3 * d2 - sqrt(9 * d2 * d2 - 12 * d1 * d3);
-    float sm = 6 * d1;
+        float tm = d2 - (1 / sqrt(3)) * sqrt(3 * d2 * d2 - 4 * d1 * d3);
+        float sm = 2 * d1;
 
-    //glm::vec2 n = glm::normalize(glm::vec2(tm, sm));
-    //tm = n.x;
-    //sm = n.y;
+        glm::mat4 texCoords;
 
-    float tn = 1.0f;
-    float sn = 0.0f;
+        texCoords[0][0] = tl * tm;
+        texCoords[1][0] = tl * tl * tl;
+        texCoords[2][0] = tm * tm * tm;
+        texCoords[3][0] = 1;
 
-    glm::mat4 texCoords;
+        texCoords[0][1] = (3 * tl * tm - tl * sm - tm * sl) / 3;
+        texCoords[1][1] = -tl * tl * sl + tl * tl * tl;
+        texCoords[2][1] = tm * tm * tm - tm * tm * sm;
+        texCoords[3][1] = 1;
 
-    texCoords[0][0] = tl * tm;
-    texCoords[1][0] = tl * tl * tl;
-    texCoords[2][0] = tm * tm * tm;
-    texCoords[3][0] = 1;
+        texCoords[0][2] = (3 * tl * tm + sm * sl + 2 * (-tl * sm - tm * sl)) / 3;
+        texCoords[1][2] = tl * sl * sl - 2 * tl * tl * sl + tl * tl * tl;
+        texCoords[2][2] = tm * tm * tm - 2 * tm * tm * sm + tm * sm * sm;
+        texCoords[3][2] = 1;
 
-    texCoords[0][1] = (3 * tl * tm - tl * sm - tm * sl)/3;
-    texCoords[1][1] = -tl * tl * sl + tl * tl * tl;
-    texCoords[2][1] = tm * tm * tm - tm * tm * sm;
-    texCoords[3][1] = 1;
+        texCoords[0][3] = tl * tm - tm * sl + sm * sl - tl * sm;
+        texCoords[1][3] = tl * tl * tl - 3 * tl * tl * sl + 3 * tl * sl * sl - sl * sl * sl;
+        texCoords[2][3] = tm * tm * tm - 3 * tm * tm * sm + 3 * tm * sm * sm - sm * sm * sm;
+        texCoords[3][3] = 1;
 
-    texCoords[0][2] = (3 * tl * tm + sm * sl + 2 * (-tl * sm - tm * sl))/3;
-    texCoords[1][2] = tl * sl * sl - 2 * tl * tl * sl + tl * tl * tl;
-    texCoords[2][2] = tm * tm * tm - 2 * tm * tm * sm + tm * sm * sm;
-    texCoords[3][2] = 1;
+        //Correcting orientation 
 
-    texCoords[0][3] = tl * tm - tm * sl + sm * sl - tl * sm;
-    texCoords[1][3] = tl * tl * tl - 3 * tl * tl * sl + 3 * tl * sl * sl - sl * sl * sl;
-    texCoords[2][3] = tm * tm * tm - 3 * tm * tm * sm + 3 * tm * sm * sm - sm * sm * sm;
-    texCoords[3][3] = 1;
+        if (d1 < 0) {
+            texCoords = texCoords * orientationCorrecter;
+        }
 
-    return texCoords;
+        return texCoords;
+    }
+    else if (discriminant < 0) {            // Loop case
+
+        float t = d2 + sqrt(4 * d1 * d3 - 3 * d2 * d2); //td
+        float s = 2 * d1;                                    //sd
+
+        float a = d2 - sqrt(4 * d1 * d3 - 3 * d2 * d2); //te
+        float b = 2 * d1;                                    //se
+
+        glm::mat4 texCoords;
+
+        texCoords[0][0] = a * t;
+        texCoords[1][0] = a * t * t;
+        texCoords[2][0] = a * a * t;
+        texCoords[3][0] = 1;
+
+        texCoords[0][1] = (3 * a * t - a * s - b * t) / 3;
+        texCoords[1][1] = (3 * a * t * t - b * t * t - 2 * a * t * s) / 3;
+        texCoords[2][1] = (3 * a * a * t - a * a * s - 2 * a * b * t) / 3;
+        texCoords[3][1] = 1;
+
+        texCoords[0][2] = (3 * a * t + b * s + 2 * (-a * s - b * t)) / 3;
+        texCoords[1][2] = (3 * a * t * t + a * s * s + 2 * b * t * s + 2*(-b * t * t - 2 * a * t * s)) / 3;
+        texCoords[2][2] = (3 * a * a * t + 2 * a * b * s + b * b * t + 2 * (-a * a * s - 2 * a * b * t)) / 3;
+        texCoords[3][2] = 1;
+
+        texCoords[0][3] = a * t - b * t + b * s - a * s;
+        texCoords[1][3] = a * t * t - b * t * t - 2 * a * t * s + a * s * s + 2 * b * t * s - b * s * s;
+        texCoords[2][3] = a * a * t - a * a * s - 2 * a * b * t + b * b * t + 2 * a * b * s - b * b * s;
+        texCoords[3][3] = 1;
+
+        return texCoords;
+    }
+
+    
 }
 

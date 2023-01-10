@@ -24,21 +24,17 @@ void main()
 
     // Linear alpha   
     float alpha = 1-sd;  
-
-    if(alpha > 1)
+    
+    
+    if(alpha >= 0.5)
     {
-       FragColor = vec4(1.0f,1.0f, 1.0f, 1f);
+       FragColor = vec4(pow(alpha,5),1.0f, 1.0f, 1.0f);
     }
-    // drawing inside the line
     else if(alpha < 0)
     {
         discard;
     }
-    else
-    {
-        FragColor = vec4(1.0f,1.0f, 1.0f, alpha);
-    }
-    
+
     
   
 
